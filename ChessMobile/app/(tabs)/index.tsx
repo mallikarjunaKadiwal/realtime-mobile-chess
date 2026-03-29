@@ -21,8 +21,7 @@ export default function ChessScreen() {
   const [activeRoom, setActiveRoom] = useState<string | null>(null);
 
   const connectToRoom = (roomName: string) => {
-    // 🚨 ENSURE THIS IP MATCHES YOUR LAPTOP'S IPv4 ADDRESS 🚨
-    const serverUrl = `ws://192.168.1.9:8000/ws/chess/${roomName}/`;
+    const serverUrl = `ws://{Your:IP}:8000/ws/chess/${roomName}/`;
     const websocket = new WebSocket(serverUrl);
 
     websocket.onopen = () => console.log(`✅ Connected to Room: ${roomName}`);
@@ -36,7 +35,6 @@ export default function ChessScreen() {
       }
 
       if (data.action === "move") {
-        // Set the flag so the phone knows not to trigger the gatekeeper
         isRemoteMove.current = true;
         setTimeout(() => {
           chessboardRef.current?.move({ from: data.from, to: data.to });
@@ -61,7 +59,6 @@ export default function ChessScreen() {
     }
   };
 
-  // --- UI STATE 1: ROOM ENTRY ---
   if (!activeRoom) {
     return (
       <View style={styles.container}>
@@ -83,7 +80,6 @@ export default function ChessScreen() {
     );
   }
 
-  // --- UI STATE 2: HANDSHAKE LOADING ---
   if (!playerColor) {
     return (
       <View style={styles.container}>
@@ -93,7 +89,6 @@ export default function ChessScreen() {
     );
   }
 
-  // --- UI STATE 3: THE LIVE MATCH ---
   return (
     <GestureHandlerRootView style={styles.container}>
       <View style={styles.header}>
@@ -106,20 +101,17 @@ export default function ChessScreen() {
       <Chessboard
         ref={chessboardRef}
         onMove={(info) => {
-          // If the move came from the server, validate and exit
           if (isRemoteMove.current) {
             isRemoteMove.current = false;
             checkGameOver(info.state.fen);
             return;
           }
 
-          // Gatekeeper: Prevent moving opponent pieces
           if (playerColor && info.move.color !== playerColor) {
             Alert.alert("Hold on!", "You can only move your own pieces.");
             return;
           }
 
-          // Broadcast your valid move
           if (ws && ws.readyState === WebSocket.OPEN) {
             ws.send(
               JSON.stringify({
